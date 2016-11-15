@@ -1,6 +1,6 @@
 taskWorker
 =======
-[![Build Status](https://travis-ci.com/dutu/xworkers.svg?token=VBAfXrvEMSTDy7vKR2cC&branch=master)](https://travis-ci.org/dutu/xworkers/) ![Dependencies Status](https://david-dm.org/dutu/taskWorker.svg)
+[![Build Status](https://travis-ci.com/dutu/xworkers.svg?token=VBAfXrvEMSTDy7vKR2cC&branch=master)](https://travis-ci.org/dutu/taskWorker/) ![Dependencies Status](https://david-dm.org/dutu/taskWorker.svg)
 
 
 
