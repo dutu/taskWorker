@@ -4,6 +4,62 @@ taskWorker
 
 
 
+Provides a class that can easyly be extended for funning tasks repetitively 
+
+Example below defins a worker with a simple task `firstTask`, which logs to the console every second. 
+
+```js
+class Worker extends TaskWorker {
+  constructor(workerName) {
+    super(workerName);
+  }
+
+  firstTask(next) {
+	console.log('log this text every 1000ms');
+    next(1000);
+  }
+}
+
+let worker = new Worker('workersName');
+worker.registerTask('firstTask');
+worker.runTask('firstTask');
+```
+
+
+A set of configuration parameters can be defined for each task.
+Example:
+
+
+```js
+class Worker extends TaskWorker {
+  constructor(workerName) {
+    super(workerName);
+  }
+
+  firstTask(next) {
+	console.log('log this text every 1000ms');
+    next(1000);
+  }
+}
+
+let worker = new Worker('workersName');
+
+worker.registerTask('firstTask');
+let extendedSchema = {
+  newConfigParameter: {
+    type: String,
+    default: 'a default value',
+  },
+};
+worker.setExtendedTaskConfigSchema('firstTask', extendedSchema); 
+
+worker.runTask('firstTask');
+```
+
+
+
+
+
 
 ## Logger
 
