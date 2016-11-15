@@ -1,18 +1,18 @@
 {
-  "taskName": "xworkers",
-  "version": "0.0.1",
-  "description": "xWorkers package",
+  "taskName": "taskWorker",
+  "version": "0.1.0",
+  "description": "running tasks repetitively",
   "author": "dutu",
   "license": "MIT",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dutu/xworkers.git"
+    "url": "https://github.com/dutu/taskWorker.git"
   },
   "bugs": {
-    "url": "https://github.com/dutu/xworkers/issues"
+    "url": "https://github.com/dutu/taskWorker/issues"
   },
-  "homepage": "https://github.com/dutu/xworkers",
+  "homepage": "https://github.com/dutu/taskWorker",
   "engines": {
     "node": "7.x.x",
     "npm": "3.x.x"
