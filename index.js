@@ -6,9 +6,9 @@ import mongoose from 'mongoose';
 import winston from 'winston';
 import ee from 'event-emitter';
 
-import { getObjectFromSchema, deepDiff }from './lib/utils';
+import { getObjectFromSchema, deepDiff } from './lib/utils';
 import { _registerTask, _getTaskStatus, _setTaskStatus, _getAllTasksStatus, taskSTATES } from './lib/taskStateUtils';
-import { _setTaskConfigSchema, _getTaskConfigSchema, _getTaskConfigModels, _getTaskConfigModel, _compileTaskConfigModels, _getTaskConfig, _setTaskConfig, _saveTaskConfigToDatabase, _dbConn} from './lib/taskConfigUtils.js';
+import { _setTaskConfigSchema, _getTaskConfigSchema, _getTaskConfigModel, _getTaskConfig, _saveTaskConfigToDatabase, _dbConn } from './lib/taskConfigUtils.js';
 
 let emitter = ee({});
 let _status = new WeakMap();
