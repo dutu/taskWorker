@@ -1,0 +1,43 @@
+{
+  "taskName": "xworkers",
+  "version": "0.0.1",
+  "description": "xWorkers package",
+  "author": "dutu",
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dutu/xworkers.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dutu/xworkers/issues"
+  },
+  "homepage": "https://github.com/dutu/xworkers",
+  "engines": {
+    "node": "7.x.x",
+    "npm": "3.x.x"
+  },
+  "scripts": {
+    "build": "babel src -d lib",
+    "start": "node server.js",
+    "test": "mocha"
+  },
+  "dependencies": {
+    "winston": "^2.3.0",
+    "mongoose": "^4.6.4",
+    "lodash": "^4.16.6",
+    "async": "^2.1.2",
+    "cryptox": "^1.1.0",
+    "event-emitter": "^0.3.4",
+    "deep-diff": "^0.3.4"
+  },
+  "devDependencies": {
+    "node-env-file": "^0.1.8",
+    "babel-cli": "^6.18.0",
+    "babel-preset-es2015": "^6.18.0",
+    "chai": "^3.5.0",
+    "chai-json-schema": "^1.1.0",
+    "mocha": "^3.1.2",
+    "sinon": "^1.17.6"
+  }
+}
