@@ -1,5 +1,5 @@
 {
-  "taskName": "taskWorker",
+  "name": "taskWorker",
   "version": "0.1.0",
   "description": "running tasks repetitively",
   "author": "dutu",
