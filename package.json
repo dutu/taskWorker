@@ -1,10 +1,10 @@
 {
   "name": "taskWorker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "running tasks repetitively",
   "author": "dutu",
   "license": "MIT",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/dutu/taskWorker.git"
@@ -14,30 +14,30 @@
   },
   "homepage": "https://github.com/dutu/taskWorker",
   "engines": {
-    "node": "7.x.x",
-    "npm": "3.x.x"
+    "node": "^7.10.0",
+    "npm": "^4.2.0"
   },
   "scripts": {
-    "build": "babel src -d lib",
-    "start": "node server.js",
+    "build": "babel src -d dist",
+    "prepublish": "npm run build",
     "test": "mocha"
   },
   "dependencies": {
-    "winston": "^2.3.0",
-    "mongoose": "^4.6.4",
-    "lodash": "^4.16.6",
-    "async": "^2.1.2",
-    "cryptox": "^1.1.0",
-    "event-emitter": "^0.3.4",
-    "deep-diff": "^0.3.4"
+    "async": "^2.4.0",
+    "cryptox": "^1.2.1",
+    "deep-diff": "^0.3.8",
+    "event-emitter": "^0.3.5",
+    "lodash": "^4.17.4",
+    "mongoose": "^4.9.8",
+    "winston": "^2.3.1"
   },
   "devDependencies": {
-    "node-env-file": "^0.1.8",
-    "babel-cli": "^6.18.0",
+    "babel-cli": "^6.24.1",
     "babel-preset-es2015": "^6.18.0",
     "chai": "^3.5.0",
-    "chai-json-schema": "^1.1.0",
-    "mocha": "^3.1.2",
-    "sinon": "^1.17.6"
+    "chai-json-schema": "^1.4.0",
+    "mocha": "^3.3.0",
+    "node-env-file": "^0.1.8",
+    "sinon": "^1.17.7"
   }
 }
