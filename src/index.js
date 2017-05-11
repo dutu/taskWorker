@@ -14,6 +14,7 @@ let emitter = ee({});
 let _status = new WeakMap();
 let _logger = new WeakMap();
 
+
 export default class TaskWorker {
   constructor(workerName) {
     let self  = this;

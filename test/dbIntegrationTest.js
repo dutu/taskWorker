@@ -10,7 +10,7 @@ const Schema = mongoose.Schema;
 const expect = chai.expect;
 chai.use(require('chai-json-schema'));
 
-import { TaskWorker} from '../src/index.js';
+import TaskWorker from '../dist/index.js';
 
 class Worker extends TaskWorker {
   constructor(workerName) {
