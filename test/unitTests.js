@@ -4,7 +4,7 @@ import _ from 'lodash';
 import chai from 'chai';
 const expect = chai.expect;
 
-import { TaskWorker} from '../src/index.js';
+import TaskWorker from '../dist/index.js';
 
 class Worker extends TaskWorker {
   constructor(workerName) {
