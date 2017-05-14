@@ -2,7 +2,7 @@ import winston from 'winston';
 import chai from 'chai';
 const expect = chai.expect;
 
-import TaskWorker from '../lib/index.js';
+import TaskWorker from '../src/index.js';
 
 describe('log()', function () {
   it(`should log all error levels`, function (done) {
