@@ -145,9 +145,9 @@ export const _saveTaskConfigToDatabase = function _saveTaskConfigToDatabase(task
 
   TaskConfigModel.update({ taskName: taskName }, newTaskConfig, { multi: true, upsert: true, setDefaultsOnInsert: true }, function (err, rawResponse) {
     if (err) {
-      log.warning(`${self.me}.saveConfigToDatabase: ${err.message}`);
+      log.warning(`${self.me}.${taskName}.saveConfigToDatabase: ${err.message}`);
     } else {
-      log.info(`${self.me}.saveConfigToDatabase: Config saved to database`);
+      log.info(`${self.me}.${taskName}.saveConfigToDatabase: Config saved to database`);
       taskConfig.hasBeenSavedtoDb = true;
       _setTaskConfig.call(self, taskConfig);
     }

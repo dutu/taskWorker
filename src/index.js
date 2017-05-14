@@ -378,7 +378,7 @@ export default class TaskWorker {
         let ConfigModel = _getTaskConfigModel.call(self, taskName);
         ConfigModel.findOne({ taskName: taskName }).lean().setOptions({ maxTimeMS : 10 }).exec(function (err, taskConfigFromDb) {
           if (err) {
-            log.error(`${self.me}.refreshTaskConfigsFromDb ${err.message}`);
+            log.error(`${self.me}.${taskName}.refreshTaskConfigsFromDb ${err.message}`);
             return callback(null);
           }
 

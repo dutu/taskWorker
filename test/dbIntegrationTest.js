@@ -10,7 +10,7 @@ const Schema = mongoose.Schema;
 const expect = chai.expect;
 chai.use(require('chai-json-schema'));
 
-import TaskWorker from '../dist/index.js';
+import TaskWorker from '../src/index.js';
 
 class Worker extends TaskWorker {
   constructor(workerName) {
@@ -121,6 +121,26 @@ describe("Integration Test", function () {
         });
       });
     });
+
+    it(`should update new db config, if it already exists`, function (done) {
+      let worker = new TaskWorker('integrationTestWorker');
+
+      worker.connectMongodb(mongodbURI, function(err){
+        expect(err).to.not.exist;
+        TestConfigModel.remove({}, function (err) {
+          expect(err).to.not.exist;
+          worker.changeTaskConfigParameters('refreshTaskConfigsFromDb', { startedAt: '2015-12-24' }, function (err) {
+            expect(err).to.not.exist;
+            TestConfigModel.findOne().lean().exec(function (err, foundConfig) {
+              expect(foundConfig).to.be.an('object');
+              expect(foundConfig.startedAt.valueOf()).to.be.equal(new Date('2015-12-24').valueOf());
+              done();
+            });
+          });
+        });
+      });
+    });
+
     it(`should change basic parameter`, function (done) {
       let worker = new Worker('integrationTestWorker');
 
