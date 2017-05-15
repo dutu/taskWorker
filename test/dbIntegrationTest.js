@@ -121,26 +121,6 @@ describe("Integration Test", function () {
         });
       });
     });
-
-    it(`should update new db config, if it already exists`, function (done) {
-      let worker = new TaskWorker('integrationTestWorker');
-
-      worker.connectMongodb(mongodbURI, function(err){
-        expect(err).to.not.exist;
-        TestConfigModel.remove({}, function (err) {
-          expect(err).to.not.exist;
-          worker.changeTaskConfigParameters('refreshTaskConfigsFromDb', { startedAt: '2015-12-24' }, function (err) {
-            expect(err).to.not.exist;
-            TestConfigModel.findOne().lean().exec(function (err, foundConfig) {
-              expect(foundConfig).to.be.an('object');
-              expect(foundConfig.startedAt.valueOf()).to.be.equal(new Date('2015-12-24').valueOf());
-              done();
-            });
-          });
-        });
-      });
-    });
-
     it(`should change basic parameter`, function (done) {
       let worker = new Worker('integrationTestWorker');
 
@@ -221,6 +201,7 @@ describe("Integration Test", function () {
             TestConfigModel.findOne().lean().exec(function (err, foundConfig) {
               expect(foundConfig).to.be.an('object');
               expect(foundConfig.newConfigParameter).to.be.equal('2015-12-24');
+              expect(foundConfig.newConfigParameter2).to.be.equal('defaultValue2');
               worker.changeTaskConfigParameters('firstTask', { newConfigParameter2: '2013-12-24' }, function (err) {
                 expect(err).to.not.exist;
                 TestConfigModel.findOne().lean().exec(function (err, foundConfig) {
@@ -269,7 +250,57 @@ describe("Integration Test", function () {
     });
   });
 
-  describe('runTask()', function () {
+  describe('setExtendedTaskConfigSchema()', function () {
+    it(`should preserve existing values`, function (done) {
+      let worker = new Worker('integrationTestWorker');
+      let defaultValue = 'defaultValue';
+      let extendedSchema = {
+        newConfigParameter: {
+          type: String,
+          default: defaultValue,
+        },
+      };
+      worker.connectMongodb(mongodbURI, function (err) {
+        expect(err).to.not.exist;
+        worker.registerTask('firstTask');
+        worker.setExtendedTaskConfigSchema('firstTask', extendedSchema);
+        worker.runTask('firstTask');
+        setTimeout(function () {
+          worker.changeTaskConfigParameters('firstTask', { newConfigParameter: 'new value' }, function (err) {
+            expect(err).to.not.exist;
+            TestConfigModel.findOne({ taskName: 'firstTask' }).lean().exec(function (err, foundConfig) {
+              expect(foundConfig).to.be.an('object');
+              expect(foundConfig.newConfigParameter).to.be.equal('new value');
+              worker.stopTask('firstTask');
+              let newWorker = new Worker('integrationTestWorker');
+              newWorker.connectMongodb(mongodbURI, function (err) {
+                let defaultValue = 'defaultValue';
+                let extendedSchema = {
+                  newConfigParameter: {
+                    type: String,
+                    default: defaultValue,
+                  },
+                };
+                newWorker.registerTask('firstTask');
+                newWorker.setExtendedTaskConfigSchema('firstTask', extendedSchema);
+                newWorker.runTask('firstTask');
+                setTimeout(function() {
+                  TestConfigModel.findOne({ taskName: 'firstTask' }).lean().exec(function (err, foundConfig) {
+                    expect(foundConfig).to.be.an('object');
+                    expect(foundConfig.newConfigParameter).to.be.equal('new value');
+                    done();
+                  });
+                }, 1000)
+              });
+            });
+          });
+        }, 200);
+      });
+    });
+  });
+
+
+    describe('runTask()', function () {
     it(`should change "shouldRun" parameter to "true"`, function (done) {
       let worker = new Worker('integrationTestWorker');
       worker.registerTask('firstTask');
@@ -308,9 +339,9 @@ describe("Integration Test", function () {
                   expect(foundConfig.shouldRun).to.be.false;
                   done();
                 });
-              }, 100);
+              }, 500);
             });
-          }, 100);
+          }, 500);
         });
       });
     });
@@ -326,7 +357,7 @@ describe("Integration Test", function () {
           function (n, next) {
             series([
               function (callback) {
-              setTimeout(callback, 100);
+              setTimeout(callback, 200);
               },
               function (callback) {
                 TestConfigModel.findOne({ taskName: 'firstTask' }).lean().exec(function (err, foundConfig) {
@@ -342,7 +373,7 @@ describe("Integration Test", function () {
                 callback(null);
               },
               function (callback) {
-                setTimeout(callback, 100);
+                setTimeout(callback, 200);
               },
               function (callback) {
                 TestConfigModel.findOne({ taskName: 'firstTask' }).lean().exec(function (err, foundConfig) {

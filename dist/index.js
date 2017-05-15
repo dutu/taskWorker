@@ -118,86 +118,114 @@ var TaskWorker = function () {
       };
       setTaskStatus(newTaskStatus);
 
-      self.changeTaskConfigParameters(taskName, { shouldRun: true });
+      var handleRun = function handleRun() {
+        (0, _async.doWhilst)(function (callback) {
+          var newTaskStatus = {
+            taskName: taskName,
+            state: _taskStateUtils.taskSTATES.running,
+            lastRunAt: new Date(),
+            delayedMS: null,
+            timeoutId: null,
+            next: null
+          };
+          setTaskStatus(newTaskStatus);
+          // self.changeTaskConfigParameters(taskName, { shouldRun: true });
 
-      (0, _async.doWhilst)(function (callback) {
-        var newTaskStatus = {
-          taskName: taskName,
-          state: _taskStateUtils.taskSTATES.running,
-          lastRunAt: new Date(),
-          delayedMS: null,
-          timeoutId: null,
-          next: null
-        };
-        setTaskStatus(newTaskStatus);
-        // self.changeTaskConfigParameters(taskName, { shouldRun: true });
+          taskFunction(function (delayMS) {
+            var taskStatus = getTaskStatus(taskName);
+            if (taskStatus.state === _taskStateUtils.taskSTATES.delayed || taskStatus.state === _taskStateUtils.taskSTATES.stopped) {
+              throw new Error(self.me + '.runTask: Unexpected taskState["' + taskName + '"] = "' + taskStatus.state + '"');
+            }
 
-        taskFunction(function (delayMS) {
+            if (!(_lodash2.default.isNumber(delayMS) || _lodash2.default.isNull(delayMS))) {
+              throw new Error(self.me + '.' + taskName + ': next() called with wrong parameter type (' + (typeof delayMS === 'undefined' ? 'undefined' : _typeof(delayMS)) + ')');
+            }
+
+            if (_lodash2.default.isNumber(delayMS) && taskStatus.state === _taskStateUtils.taskSTATES.running) {
+              var next = _lodash2.default.bind(callback, self);
+              var _newTaskStatus = {
+                taskName: taskName,
+                state: _taskStateUtils.taskSTATES.delayed,
+                lastRunAt: taskStatus.lastRunAt,
+                delayedMS: delayMS,
+                timeoutId: setTimeout(next, delayMS),
+                next: _lodash2.default.bind(callback, this)
+              };
+              setTaskStatus(_newTaskStatus);
+              //            self.changeTaskConfigParameters(taskName, { shouldRun: true });
+            } else {
+              var _newTaskStatus2 = {
+                taskName: taskName,
+                state: _taskStateUtils.taskSTATES.stopping,
+                lastRunAt: taskStatus.lastRunAt,
+                delayedMS: null,
+                timeoutId: null,
+                next: null
+              };
+              setTaskStatus(_newTaskStatus2);
+              //            self.changeTaskConfigParameters(taskName, { shouldRun: false });
+              callback();
+            }
+          });
+        }, function () {
           var taskStatus = getTaskStatus(taskName);
-          if (taskStatus.state === _taskStateUtils.taskSTATES.delayed || taskStatus.state === _taskStateUtils.taskSTATES.stopped) {
-            throw new Error(self.me + '.runTask: Unexpected taskState["' + taskName + '"] = "' + taskStatus.state + '"');
+          switch (taskStatus.state) {
+            case _taskStateUtils.taskSTATES.delayed:
+              return true;
+            case _taskStateUtils.taskSTATES.stopping:
+              return false;
+            default:
+              throw new Error(self.me + '.runTask: Unexpected taskState["' + taskName + '"] ' + taskStatus.state + ' )');
+          }
+        }, function (err, results) {
+          if (err) {
+            throw err;
           }
 
-          if (!(_lodash2.default.isNumber(delayMS) || _lodash2.default.isNull(delayMS))) {
-            throw new Error(self.me + '.' + taskName + ': next() called with wrong parameter type (' + (typeof delayMS === 'undefined' ? 'undefined' : _typeof(delayMS)) + ')');
-          }
+          var newTaskStatus = {
+            taskName: taskName,
+            state: _taskStateUtils.taskSTATES.stopped,
+            lastRunAt: taskStatus.lastRunAt,
+            delayedMS: null,
+            timeoutId: null,
+            next: null
+          };
+          setTaskStatus(newTaskStatus);
+          //self.changeTaskConfigParameters(taskName, { shouldRun: false });
 
-          if (_lodash2.default.isNumber(delayMS) && taskStatus.state === _taskStateUtils.taskSTATES.running) {
-            var next = _lodash2.default.bind(callback, self);
-            var _newTaskStatus = {
-              taskName: taskName,
-              state: _taskStateUtils.taskSTATES.delayed,
-              lastRunAt: taskStatus.lastRunAt,
-              delayedMS: delayMS,
-              timeoutId: setTimeout(next, delayMS),
-              next: _lodash2.default.bind(callback, this)
-            };
-            setTaskStatus(_newTaskStatus);
-            //            self.changeTaskConfigParameters(taskName, { shouldRun: true });
-          } else {
-            var _newTaskStatus2 = {
-              taskName: taskName,
-              state: _taskStateUtils.taskSTATES.stopping,
-              lastRunAt: taskStatus.lastRunAt,
-              delayedMS: null,
-              timeoutId: null,
-              next: null
-            };
-            setTaskStatus(_newTaskStatus2);
-            //            self.changeTaskConfigParameters(taskName, { shouldRun: false });
-            callback();
+          if (_lodash2.default.isFunction(callbackAfterStopped)) {
+            callbackAfterStopped.call(self);
           }
         });
-      }, function () {
-        var taskStatus = getTaskStatus(taskName);
-        switch (taskStatus.state) {
-          case _taskStateUtils.taskSTATES.delayed:
-            return true;
-          case _taskStateUtils.taskSTATES.stopping:
-            return false;
-          default:
-            throw new Error(self.me + '.runTask: Unexpected taskState["' + taskName + '"] ' + taskStatus.state + ' )');
-        }
-      }, function (err, results) {
-        if (err) {
-          throw err;
-        }
+      };
 
-        var newTaskStatus = {
-          taskName: taskName,
-          state: _taskStateUtils.taskSTATES.stopped,
-          lastRunAt: taskStatus.lastRunAt,
-          delayedMS: null,
-          timeoutId: null,
-          next: null
-        };
-        setTaskStatus(newTaskStatus);
-        //self.changeTaskConfigParameters(taskName, { shouldRun: false });
+      if (_lodash2.default.isUndefined(_taskConfigUtils._dbConn.get(self))) {
+        self.changeTaskConfigParameters(taskName, { shouldRun: true });
+        handleRun();
+      } else {
+        var ConfigModel = _taskConfigUtils._getTaskConfigModel.call(self, taskName);
+        ConfigModel.findOne({ taskName: taskName }).lean().setOptions({ maxTimeMS: 10 }).exec(function (err, taskConfigFromDb) {
+          if (err) {
+            log.error(self.me + '.' + taskName + '.runTask ' + err.message);
+            setTimeout(function () {
+              self.runTask(taskName, callbackAfterStopped);
+            }, 1000);
+            return;
+          }
 
-        if (_lodash2.default.isFunction(callbackAfterStopped)) {
-          callbackAfterStopped.call(self);
-        }
-      });
+          if (taskConfigFromDb) {
+            var newConfigParameters = _lodash2.default.cloneDeep(taskConfigFromDb);
+            delete newConfigParameters.taskName;
+            delete newConfigParameters._id;
+            delete newConfigParameters.__v;
+            delete newConfigParameters.$setOnInsert;
+            newConfigParameters.shouldRun = true;
+            self.changeTaskConfigParameters(taskName, newConfigParameters);
+          }
+
+          handleRun();
+        });
+      }
     }
   }, {
     key: 'stopTask',

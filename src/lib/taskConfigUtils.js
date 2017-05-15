@@ -81,7 +81,6 @@ export const _setTaskConfigSchema = function _setTaskConfigSchema(taskName, exte
   }
 
   _taskConfigSchemas.set(self, taskConfigSchemas);
-
   let defaultTaskConfig = getObjectFromSchema(newConfigSchema);
   defaultTaskConfig.hasBeenSavedtoDb = false;
   _setTaskConfig.call(self, defaultTaskConfig);

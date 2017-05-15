@@ -95,7 +95,6 @@ var _setTaskConfigSchema = exports._setTaskConfigSchema = function _setTaskConfi
   }
 
   _taskConfigSchemas.set(self, taskConfigSchemas);
-
   var defaultTaskConfig = (0, _utils.getObjectFromSchema)(newConfigSchema);
   defaultTaskConfig.hasBeenSavedtoDb = false;
   _setTaskConfig.call(self, defaultTaskConfig);

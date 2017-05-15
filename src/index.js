@@ -90,90 +90,118 @@ export default class TaskWorker {
     };
     setTaskStatus(newTaskStatus);
 
-    self.changeTaskConfigParameters(taskName, { shouldRun: true });
+    let handleRun = function handleRun() {
+      doWhilst(
+        function(callback) {
+          let newTaskStatus = {
+            taskName: taskName,
+            state: taskSTATES.running,
+            lastRunAt: new Date(),
+            delayedMS: null,
+            timeoutId: null,
+            next:null,
+          };
+          setTaskStatus(newTaskStatus);
+          // self.changeTaskConfigParameters(taskName, { shouldRun: true });
 
-    doWhilst(
-      function(callback) {
-        let newTaskStatus = {
-          taskName: taskName,
-          state: taskSTATES.running,
-          lastRunAt: new Date(),
-          delayedMS: null,
-          timeoutId: null,
-          next:null,
-        };
-        setTaskStatus(newTaskStatus);
-        // self.changeTaskConfigParameters(taskName, { shouldRun: true });
+          taskFunction(function(delayMS) {
+            let taskStatus = getTaskStatus(taskName);
+            if (taskStatus.state === taskSTATES.delayed || taskStatus.state === taskSTATES.stopped) {
+              throw new Error (`${self.me}.runTask: Unexpected taskState["${taskName}"] = "${taskStatus.state}"`)
+            }
 
-        taskFunction(function(delayMS) {
-          let taskStatus = getTaskStatus(taskName);
-          if (taskStatus.state === taskSTATES.delayed || taskStatus.state === taskSTATES.stopped) {
-            throw new Error (`${self.me}.runTask: Unexpected taskState["${taskName}"] = "${taskStatus.state}"`)
-          }
+            if(!(_.isNumber(delayMS) || _.isNull(delayMS))) {
+              throw new Error (`${self.me}.${taskName}: next() called with wrong parameter type (${typeof delayMS})`);
+            }
 
-          if(!(_.isNumber(delayMS) || _.isNull(delayMS))) {
-            throw new Error (`${self.me}.${taskName}: next() called with wrong parameter type (${typeof delayMS})`);
-          }
-
-          if(_.isNumber(delayMS) && taskStatus.state === taskSTATES.running) {
-            let next = _.bind(callback, self);
-            let newTaskStatus = {
-              taskName: taskName,
-              state: taskSTATES.delayed,
-              lastRunAt: taskStatus.lastRunAt,
-              delayedMS: delayMS,
-              timeoutId: setTimeout(next, delayMS),
-              next: _.bind(callback, this),
-            };
-            setTaskStatus(newTaskStatus);
+            if(_.isNumber(delayMS) && taskStatus.state === taskSTATES.running) {
+              let next = _.bind(callback, self);
+              let newTaskStatus = {
+                taskName: taskName,
+                state: taskSTATES.delayed,
+                lastRunAt: taskStatus.lastRunAt,
+                delayedMS: delayMS,
+                timeoutId: setTimeout(next, delayMS),
+                next: _.bind(callback, this),
+              };
+              setTaskStatus(newTaskStatus);
 //            self.changeTaskConfigParameters(taskName, { shouldRun: true });
-          } else {
-            let newTaskStatus = {
-              taskName: taskName,
-              state: taskSTATES.stopping,
-              lastRunAt: taskStatus.lastRunAt,
-              delayedMS: null,
-              timeoutId: null,
-              next: null,
-            };
-            setTaskStatus(newTaskStatus);
+            } else {
+              let newTaskStatus = {
+                taskName: taskName,
+                state: taskSTATES.stopping,
+                lastRunAt: taskStatus.lastRunAt,
+                delayedMS: null,
+                timeoutId: null,
+                next: null,
+              };
+              setTaskStatus(newTaskStatus);
 //            self.changeTaskConfigParameters(taskName, { shouldRun: false });
-            callback();
+              callback();
+            }
+          })
+        },
+        function() {
+          let taskStatus = getTaskStatus(taskName);
+          switch(taskStatus.state) {
+            case taskSTATES.delayed:
+              return true;
+            case taskSTATES.stopping:
+              return false;
+            default:
+              throw new Error (`${self.me}.runTask: Unexpected taskState["${taskName}"] ${taskStatus.state} )`)
           }
-        })
-      },
-      function() {
-        let taskStatus = getTaskStatus(taskName);
-        switch(taskStatus.state) {
-          case taskSTATES.delayed:
-            return true;
-          case taskSTATES.stopping:
-            return false;
-          default:
-            throw new Error (`${self.me}.runTask: Unexpected taskState["${taskName}"] ${taskStatus.state} )`)
+        },
+        function(err, results) {
+          if (err) {
+            throw (err);
+          }
+
+          let newTaskStatus = {
+            taskName: taskName,
+            state: taskSTATES.stopped,
+            lastRunAt: taskStatus.lastRunAt,
+            delayedMS: null,
+            timeoutId: null,
+            next: null,
+          };
+          setTaskStatus(newTaskStatus);
+          //self.changeTaskConfigParameters(taskName, { shouldRun: false });
+
+          if (_.isFunction(callbackAfterStopped)) {
+            callbackAfterStopped.call(self);
+          }
         }
-      },
-      function(err, results) {
+      );
+    };
+
+    if (_.isUndefined(_dbConn.get(self))) {
+      self.changeTaskConfigParameters(taskName, { shouldRun: true });
+      handleRun();
+    } else {
+      let ConfigModel = _getTaskConfigModel.call(self, taskName);
+      ConfigModel.findOne({ taskName: taskName }).lean().setOptions({ maxTimeMS : 10 }).exec(function (err, taskConfigFromDb) {
         if (err) {
-          throw (err);
+          log.error(`${self.me}.${taskName}.runTask ${err.message}`);
+          setTimeout(function () {
+            self.runTask(taskName,callbackAfterStopped);
+          }, 1000);
+          return;
         }
 
-        let newTaskStatus = {
-          taskName: taskName,
-          state: taskSTATES.stopped,
-          lastRunAt: taskStatus.lastRunAt,
-          delayedMS: null,
-          timeoutId: null,
-          next: null,
-        };
-        setTaskStatus(newTaskStatus);
-        //self.changeTaskConfigParameters(taskName, { shouldRun: false });
-
-        if (_.isFunction(callbackAfterStopped)) {
-          callbackAfterStopped.call(self);
+        if (taskConfigFromDb) {
+          let newConfigParameters = _.cloneDeep(taskConfigFromDb);
+          delete newConfigParameters.taskName;
+          delete newConfigParameters._id;
+          delete newConfigParameters.__v;
+          delete newConfigParameters.$setOnInsert;
+          newConfigParameters.shouldRun = true;
+          self.changeTaskConfigParameters(taskName, newConfigParameters);
         }
-      }
-    );
+
+        handleRun();
+      });
+    }
   }
 
   stopTask(taskName) {
